@@ -12,18 +12,20 @@
             <h1>AnimeGrid</h1>
             <span id="global-counter" class="badge-counter-total">Total: 0</span>
         </div>
-        <div class="controls">
-            <input type="number" id="year-input" min="2000" max="2099">
-            <select id="season-select">
-                <option value="winter">Inverno</option>
-                <option value="spring">Primavera</option>
-                <option value="summer">Verão</option>
-                <option value="fall">Outono</option>
-            </select>
-            
-            <button onclick="fetchSpecificSeason()">Buscar</button>
-            <button onclick="toggleTheme()" class="secondary">🌓 Tema</button>
-        </div>
+       <div class="controls">
+    <input type="text" id="search-input" placeholder="Filtrar por nome..." oninput="filterByName()">
+    
+    <input type="number" id="year-input" min="2000" max="2099">
+    <select id="season-select">
+        <option value="winter">Inverno</option>
+        <option value="spring">Primavera</option>
+        <option value="summer">Verão</option>
+        <option value="fall">Outono</option>
+    </select>
+    
+    <button onclick="fetchSpecificSeason()">Carregar temporada</button>
+    <button onclick="toggleTheme()" class="secondary">🌓 Tema</button>
+</div>
     </header>
 
     <main id="kanban-board" class="kanban-board">
@@ -34,13 +36,21 @@
             <span class="modal-close" onclick="closeModal()">&times;</span>
             <h2 id="m-title">Título do Anime</h2>
             <p id="m-synopsis" style="font-size: 0.9rem; margin: 15px 0; color: var(--text-sub); line-height: 1.5; max-height: 200px; overflow-y: auto;"></p>
+            
             <div class="modal-info-grid">
                 <div><strong>Episódios:</strong> <span id="m-episodes"></span></div>
                 <div><strong>Nota:</strong> <span id="m-score"></span></div>
                 <div><strong>Gêneros:</strong> <span id="m-genres"></span></div>
             </div>
-        </div>
+
+            <div class="modal-streaming">
+                <strong>Onde assistir:</strong>
+                <div id="m-streamings" class="streaming-container">
+                    </div>
+            </div>
+            </div>
     </div>
+           
     
     <script src="app.js"></script>
 </body>
