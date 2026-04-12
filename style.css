@@ -194,3 +194,117 @@ button.secondary { background: var(--text-sub); }
 }
 .modal-close { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 1.5rem; }
 .modal-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+ 
+
+/* =========================================
+   CONTAINER E BOTÕES DE STREAMING
+   ========================================= */
+.streaming-container {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.stream-loading, .no-stream {
+    font-size: 0.7rem;
+    color: var(--text-sub);
+    font-style: italic;
+}
+
+.stream-link {
+    font-size: 0.65rem;
+    color: white !important;
+    background: var(--text-sub); /* Cor genérica para streamings desconhecidos */
+    padding: 5px 8px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    display: inline-block;
+}
+
+.stream-link:hover {
+    opacity: 0.85;
+    transform: translateY(-2px);
+}
+
+/* Identificação de Cores Oficiais via URL */
+.stream-link[href*="crunchyroll"] { background: #F47521; }
+.stream-link[href*="netflix"] { background: #E50914; }
+.stream-link[href*="primevideo"] { background: #00A8E1; }
+.stream-link[href*="hidive"] { background: #00A1E5; }
+.stream-link[href*="bilibili"] { background: #00A1D6; }
+.stream-link[href*="disney"] { background: #113CCF; }
+
+/* =========================================
+   STREAMING DENTRO DO MODAL
+   ========================================= */
+.modal-streaming {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+
+.modal-streaming strong {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+
+
+
+
+/* Ajuste na altura da imagem para equilibrar o card sem botão */
+.card-media {
+    height: 180px; 
+}
+
+/* =========================================
+   RESPONSIVIDADE (Mobile & Tablets)
+   ========================================= */
+@media (max-width: 768px) {
+    .top-bar {
+        height: auto;
+        min-height: 80px;
+        padding: 15px;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .brand {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .controls {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .controls input, 
+    .controls select, 
+    .controls button {
+        flex: 1 1 calc(50% - 10px);
+    }
+    
+    /* O campo de busca ganha destaque e ocupa toda a linha no celular */
+    #search-input {
+        flex: 1 1 100%;
+    }
+
+    .kanban-board {
+        scroll-snap-type: x mandatory;
+        scroll-padding: 15px;
+        padding-bottom: 30px;
+    }
+
+    .kanban-column {
+        flex: 0 0 85vw; /* Ocupa 85% da tela, deixando a próxima coluna visível */
+        scroll-snap-align: center;
+        height: calc(100vh - 190px); /* Ajustado para o novo header empilhado */
+    }
+}
