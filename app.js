@@ -11,6 +11,17 @@ const DAYS_BR = {
 let animeState = [];
 let prefs = JSON.parse(localStorage.getItem('animeGrid_v2')) || {};
 let showOthers = localStorage.getItem(OTHERS_PREF_KEY) === 'true';
+let searchTerm = ''; // Nova variável para armazenar o termo da pesquisa
+
+//Adicione a função de filtro vinculada ao input de busca
+function filterByName() {
+    const val = document.getElementById('search-input').value.toLowerCase();
+    if (val.length >= 3 || val.length === 0) {
+        searchTerm = val;
+        render(); // Atualiza a tela imediatamente
+    }
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
@@ -99,16 +110,25 @@ async function loadSeasonData(year, season) {
     }
 }
 
+// ==========================================
+// 1. FUNÇÃO RENDER ATUALIZADA
+// ==========================================
 function render() {
     const board = document.getElementById('kanban-board');
     if (!board) return;
     board.innerHTML = '';
     const fragment = document.createDocumentFragment();
 
-    const filtered = animeState.filter(a => 
-        (a.status === "Currently Airing" || a.status === "Not yet aired" || a.status === "Finished Airing") 
-        && a.images?.jpg?.image_url
-    );
+    // Limpa a fila de streamings anterior toda vez que a tela é atualizada
+    streamingQueue.length = 0; 
+
+    const filtered = animeState.filter(a => {
+        const isValidStatus = (a.status === "Currently Airing" || a.status === "Not yet aired" || a.status === "Finished Airing");
+        const hasImage = a.images?.jpg?.image_url;
+        const matchesSearch = searchTerm.length >= 3 ? a.title.toLowerCase().includes(searchTerm) : true;
+        
+        return isValidStatus && hasImage && matchesSearch;
+    });
 
     document.getElementById('global-counter').innerText = `Total: ${filtered.length} Animes`;
 
@@ -129,47 +149,142 @@ function render() {
 
         const container = col.querySelector('.cards-container');
         dayAnimes.forEach(anime => {
-            const status = prefs[anime.mal_id] || '';
             const card = document.createElement('div');
-            card.className = `anime-card ${status}`;
+            card.className = `anime-card`;
             card.onclick = () => openAnimeDetails(anime.mal_id);
+            
+            // Retiramos o broadcastStr antigo e colocamos um container vazio para os streamings
             card.innerHTML = `
                 <div class="card-media"><img src="${anime.images.jpg.image_url}" loading="lazy"></div>
                 <div class="anime-info">
                     <h3>${anime.title}</h3>
                     <p>⭐ ${anime.score || 'N/A'}</p>
-                </div>
-                <div class="card-actions" onclick="event.stopPropagation()">
-                    <button onclick="updatePref('${anime.mal_id}', 'watching')">
-                        ${status === 'watching' ? '✓ Salvo' : '+ Add'}
-                    </button>
+                    <div class="streaming-container" id="stream-${anime.mal_id}">
+                        <span class="stream-loading">Buscando streamings...</span>
+                    </div>
                 </div>
             `;
             container.appendChild(card);
+
+            // Coloca esse anime na fila para buscar onde assistir
+            streamingQueue.push({ 
+                id: anime.mal_id, 
+                container: card.querySelector(`#stream-${anime.mal_id}`) 
+            });
         });
         fragment.appendChild(col);
     });
     
     board.appendChild(fragment);
+    
+    // Inicia o processamento da fila assim que os cards aparecem na tela
+    processStreamingQueue(); 
 }
 
-function openAnimeDetails(id) {
+
+// ==========================================
+// 2. SISTEMA DE FILA PARA EVITAR ERRO 429
+// ==========================================
+const streamingQueue = [];
+let isProcessingQueue = false;
+
+async function processStreamingQueue() {
+    // Se já estiver processando, não faz nada
+    if (isProcessingQueue) return;
+    isProcessingQueue = true;
+
+    while (streamingQueue.length > 0) {
+        const { id, container } = streamingQueue.shift();
+        
+        // Se o card não estiver mais na tela (ex: usuário usou a barra de busca), ignora
+        if (!document.body.contains(container)) continue;
+
+        try {
+            const resp = await fetch(`${API_BASE}/anime/${id}/streaming`);
+            
+            if (resp.status === 429) {
+                // Se tomar limite da API, devolve pra fila e espera 2 segundos
+                streamingQueue.unshift({ id, container }); 
+                await new Promise(r => setTimeout(r, 2000)); 
+                continue;
+            }
+            
+            const data = await resp.json();
+            container.innerHTML = ''; // Limpa o texto "Buscando..."
+            
+            if (data.data && data.data.length > 0) {
+                data.data.forEach(stream => {
+                    const a = document.createElement('a');
+                    a.href = stream.url;
+                    a.target = '_blank'; // Abre em nova aba
+                    a.className = 'stream-link';
+                    a.innerText = stream.name;
+                    a.onclick = (e) => e.stopPropagation(); // Evita abrir o modal ao clicar no link
+                    container.appendChild(a);
+                });
+            } else {
+                container.innerHTML = '<span class="no-stream">Sem streaming oficial</span>';
+            }
+        } catch (e) {
+            container.innerHTML = '<span class="no-stream">Erro ao carregar</span>';
+        }
+
+        // Delay MÁGICO: Espera 400ms entre cada chamada para respeitar o limite de 3/seg do Jikan
+        await new Promise(r => setTimeout(r, 400));
+    }
+    
+    isProcessingQueue = false;
+}
+
+async function openAnimeDetails(id) {
     const anime = animeState.find(a => a.mal_id === id);
     if (!anime) return;
+    
+    // Preenche as informações básicas
     document.getElementById('m-title').innerText = anime.title;
     document.getElementById('m-synopsis').innerText = anime.synopsis || "Sem sinopse disponível.";
     document.getElementById('m-episodes').innerText = anime.episodes || "?";
     document.getElementById('m-score').innerText = anime.score || "N/A";
-    document.getElementById('m-genres').innerText = anime.genres.map(g => g.name).join(', ');
+    
+    // Tratamento seguro para os gêneros
+    const genres = anime.genres ? anime.genres.map(g => g.name).join(', ') : 'N/A';
+    document.getElementById('m-genres').innerText = genres;
+    
+    // Exibe o modal na tela
     document.getElementById('anime-modal').style.display = 'flex';
+
+    // ==========================================
+    // BUSCA DE STREAMING SOB DEMANDA NO MODAL
+    // ==========================================
+    const streamContainer = document.getElementById('m-streamings');
+    streamContainer.innerHTML = '<span class="stream-loading">Buscando opções...</span>';
+
+    try {
+        const resp = await fetch(`${API_BASE}/anime/${id}/streaming`);
+        if (!resp.ok) throw new Error('Erro na API');
+        
+        const data = await resp.json();
+        streamContainer.innerHTML = ''; // Limpa o texto de "Buscando..."
+        
+        if (data.data && data.data.length > 0) {
+            data.data.forEach(stream => {
+                const a = document.createElement('a');
+                a.href = stream.url;
+                a.target = '_blank'; // Abre em nova guia
+                a.className = 'stream-link'; // Reaproveita o CSS colorido que já fizemos!
+                a.innerText = stream.name;
+                streamContainer.appendChild(a);
+            });
+        } else {
+            streamContainer.innerHTML = '<span class="no-stream">Nenhum streaming oficial encontrado</span>';
+        }
+    } catch (e) {
+        streamContainer.innerHTML = '<span class="no-stream">Não foi possível carregar as opções</span>';
+    }
 }
 
 function closeModal() { document.getElementById('anime-modal').style.display = 'none'; }
-function updatePref(id, type) {
-    prefs[id] = prefs[id] === type ? '' : type;
-    localStorage.setItem('animeGrid_v2', JSON.stringify(prefs));
-    render();
-}
+
 function toggleOthersColumn() {
     showOthers = !showOthers;
     localStorage.setItem(OTHERS_PREF_KEY, showOthers);
