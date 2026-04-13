@@ -180,32 +180,118 @@ button.secondary { background: var(--text-sub); }
 .card-actions button { flex: 1; padding: 6px; font-size: 0.8rem; border-radius: 8px; }
 
 /* Modal */
+
+/* Fix da Overlay e Fundo */
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
     display: none; justify-content: center; align-items: center; z-index: 1000;
 }
 
-.modal-content {
-    background: var(--header-bg); padding: 30px; border-radius: 24px;
-    max-width: 500px; width: 90%; position: relative;
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-    color: var(--text-main);
+
+/* Ajuste do botão de fechar para o novo layout */
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    cursor: pointer;
+    font-size: 1.8rem;
+    color: var(--text-sub);
+    z-index: 10;
 }
-.modal-close { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 1.5rem; }
+
 .modal-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
  
+.modal-body-layout {
+    background: var(--header-bg); /* Garante fundo sólido */
+    color: var(--text-main);
+    padding: 30px;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+}
+
+/* Layout Superior: Imagem e Sinopse */
+.modal-main-row {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+@keyframes modalShow {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-content {
+    flex: 1; /* Faz o texto ocupar o espaço da esquerda */
+    min-width: 0; /* Evita que o texto quebre o layout */
+}
+
+/* Coluna da Imagem */
+.modal-image-sidebar { flex: 0 0 200px; }
+.modal-image-sidebar img {
+    width: 100%; border-radius: 12px; border: 1px solid var(--border);
+}
+.modal-synopsis-container { flex: 1; }
+#m-synopsis {
+    font-size: 0.9rem; color: var(--text-sub); line-height: 1.6;
+    margin-top: 8px; max-height: 250px; overflow-y: auto;
+}
+
+
+/* Ajuste Responsivo: Se a tela for pequena, a imagem vai para cima */
+@media (max-width: 600px) {
+    .modal-body-layout {
+        flex-direction: column-reverse;
+    }
+    .modal-image-sidebar {
+        width: 120px;
+        margin: 0 auto 15px auto;
+    }
+}
+/* Títulos */
+#m-title-english {
+    font-size: 1rem; color: var(--text-sub); font-style: italic; margin-bottom: 20px;
+}
+
+/* Grid de Detalhes */
+.modal-details-section {
+    padding: 20px 0; border-top: 1px solid var(--border); margin-bottom: 20px;
+}
+
+.modal-info-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;
+}
+
+.modal-info-grid div { font-size: 0.85rem; }
+
+/* Streaming */
+.modal-streaming { padding-top: 15px; border-top: 1px solid var(--border); }
+
+
+
 
 /* =========================================
    CONTAINER E BOTÕES DE STREAMING
    ========================================= */
+
+/* Ajusta o tamanho da fonte apenas para os links dentro do card */
+
+
 .streaming-container {
     margin-top: 10px;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
-
+*/
 .stream-loading, .no-stream {
     font-size: 0.7rem;
     color: var(--text-sub);
@@ -213,21 +299,21 @@ button.secondary { background: var(--text-sub); }
 }
 
 .stream-link {
-    font-size: 0.65rem;
+    font-size: 0.80rem;
     color: white !important;
-    background: var(--text-sub); /* Cor genérica para streamings desconhecidos */
-    padding: 5px 8px;
-    border-radius: 6px;
+    background: var(--text-sub); // Cor genérica para streamings desconhecidos 
+    padding: 7px 6px;
+    border-radius: 4px;
     text-decoration: none;
-    font-weight: bold;
     transition: transform 0.2s ease, opacity 0.2s ease;
     display: inline-block;
 }
 
 .stream-link:hover {
-    opacity: 0.85;
-    transform: translateY(-2px);
+    transform: scale(1.05); /* Aumenta levemente ao passar o mouse */
+    opacity: 0.9;           /* Fica levemente transparente */
 }
+
 
 /* Identificação de Cores Oficiais via URL */
 .stream-link[href*="crunchyroll"] { background: #F47521; }
@@ -237,21 +323,6 @@ button.secondary { background: var(--text-sub); }
 .stream-link[href*="bilibili"] { background: #00A1D6; }
 .stream-link[href*="disney"] { background: #113CCF; }
 
-/* =========================================
-   STREAMING DENTRO DO MODAL
-   ========================================= */
-.modal-streaming {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid var(--border);
-}
-
-.modal-streaming strong {
-    display: block;
-    margin-bottom: 10px;
-    font-size: 0.9rem;
-    color: var(--text-main);
-}
 
 
 
@@ -265,14 +336,10 @@ button.secondary { background: var(--text-sub); }
 /* =========================================
    RESPONSIVIDADE (Mobile & Tablets)
    ========================================= */
-@media (max-width: 768px) {
-    .top-bar {
-        height: auto;
-        min-height: 80px;
-        padding: 15px;
-        flex-direction: column;
-        gap: 15px;
-    }
+
+@media (max-width: 600px) {
+    .modal-main-row { flex-direction: column; align-items: center; }
+    .modal-image-sidebar { width: 150px; }
 
     .brand {
         width: 100%;
@@ -291,9 +358,14 @@ button.secondary { background: var(--text-sub); }
         flex: 1 1 calc(50% - 10px);
     }
     
-    /* O campo de busca ganha destaque e ocupa toda a linha no celular */
     #search-input {
-        flex: 1 1 100%;
+        width: 200px;
+        transition: width 0.3s ease;
+    }
+
+    #search-input:focus {
+        width: 250px;
+        border-color: var(--accent);
     }
 
     .kanban-board {
@@ -307,4 +379,93 @@ button.secondary { background: var(--text-sub); }
         scroll-snap-align: center;
         height: calc(100vh - 190px); /* Ajustado para o novo header empilhado */
     }
+
+    .modal-body-layout {
+        flex-direction: column; /* Imagem em cima, texto embaixo */
+        padding: 20px;
+        max-height: 90vh;
+        overflow-y: auto;
+        gap: 20px;
+    }
+       .modal-close {
+        top: 10px;
+        right: 15px;
+    }
+}
+
+/* Container do título no modal (alinhamento) */
+.modal-header-actions {
+    display: inline-flex;;
+    align-items: center;
+    gap: 10px; /* Espaço maior para o botão flutuante */
+    margin-bottom: 15px;
+    max-width: 100%; /* Garante que não ultrapasse o modal */
+    flex-wrap: wrap; /* Caso o título seja muito longo, o botão quebra para a linha de baixo junto com o texto */
+}
+
+.modal-header-actions h2 {
+    margin: 0 !important;
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1.2;
+    display: inline; /* Comportamento de texto comum */
+}
+
+
+/* NOVO ESTILO: BOTÃO COPY "BUBBLE" */
+.copy-btn.bubble-copy {
+    background: #ffffff; /* Fundo branco puro para destacar a sombra */
+    border: none; /* Removemos a borda para usar apenas sombra */
+    color: #4f46e5; /* Indigo forte para o ícone */
+    padding: 10px; /* Mais padding para arredondar */
+    
+    /* CURVATURA BUBBLE: Arredondamento extra para parecer flutuante */
+    border-radius: 14px; 
+    
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    
+    /* Mantendo o efeito de papéis sobrepostos da imagem anterior */
+    box-shadow: 
+        4px 4px 0px 0px rgba(79, 70, 229, 0.1), 
+        0px 2px 8px rgba(0, 0, 0, 0.08);
+        
+    /* Impede que o botão diminua se o título for grande */
+    flex-shrink: 0; 
+    transform: translateY(-2px); /* Alinhamento visual com a altura da fonte */
+}
+
+/* Interação ao passar o mouse: flutua mais */
+.copy-btn.bubble-copy:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 
+        8px 8px 0px 0px rgba(79, 70, 229, 0.15),
+        0px 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Feedback Visual ao Copiar (O botão pisca em verde) */
+.copy-btn.bubble-copy.copied {
+    background: #ecfdf5; /* Fundo verde menta */
+    color: #10b981;    /* Ícone verde */
+    box-shadow: 
+        6px 6px 0px 0px rgba(16, 185, 129, 0.15), /* Sombra Verde Trás */
+        0px 4px 10px rgba(16, 185, 129, 0.1);
+}
+
+/* Ajuste sutil para o Dark Mode */
+body.dark-mode .copy-btn.bubble-copy {
+    background: #2d3748; /* Slate mais claro no escuro */
+    box-shadow: 
+        6px 6px 0px 0px rgba(129, 140, 248, 0.2), /* Sombra Indigo Clara (Dark) */
+        0px 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .copy-btn.bubble-copy.copied {
+    background: #064e3b; /* Fundo verde escuro */
+    color: #34d399;
+    box-shadow: 
+        6px 6px 0px 0px rgba(52, 211, 153, 0.2);
 }
