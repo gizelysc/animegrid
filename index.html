@@ -13,7 +13,7 @@
             <span id="global-counter" class="badge-counter-total">Total: 0</span>
         </div>
        <div class="controls">
-    <input type="text" id="search-input" placeholder="Filtrar por nome..." oninput="filterByName()">
+    <input type="text" id="search-input" placeholder="Buscar por nome..." oninput="filterByName()">
     
     <input type="number" id="year-input" min="2000" max="2099">
     <select id="season-select">
@@ -28,28 +28,50 @@
 </div>
     </header>
 
-    <main id="kanban-board" class="kanban-board">
-        </main>
+    <main id="kanban-board" class="kanban-board"></main>
    
     <div id="anime-modal" class="modal-overlay" onclick="closeModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <span class="modal-close" onclick="closeModal()">&times;</span>
-            <h2 id="m-title">Título do Anime</h2>
-            <p id="m-synopsis" style="font-size: 0.9rem; margin: 15px 0; color: var(--text-sub); line-height: 1.5; max-height: 200px; overflow-y: auto;"></p>
-            
+    <div class="modal-body-layout" onclick="event.stopPropagation()">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        
+        <div class="modal-header-section">
+            <div class="modal-header-actions">
+                <h2 id="m-title">Título Japonês</h2>
+                <button onclick="copyTitle()" class="copy-btn bubble-copy" title="Copiar título">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+            </div>
+            <p id="m-title-english"></p>
+        </div>
+
+        <div class="modal-main-row">
+            <div class="modal-image-sidebar">
+                <img id="m-image" src="" alt="Poster">
+            </div>
+            <div class="modal-synopsis-container">
+                <strong>Sinopse</strong>
+                <p id="m-synopsis"></p>
+            </div>
+        </div>
+
+        <div class="modal-details-section">
             <div class="modal-info-grid">
                 <div><strong>Episódios:</strong> <span id="m-episodes"></span></div>
                 <div><strong>Nota:</strong> <span id="m-score"></span></div>
                 <div><strong>Gêneros:</strong> <span id="m-genres"></span></div>
+                <div><strong>Estúdio:</strong> <span id="m-studio"></span></div>
+                <div><strong>🕗Japão:</strong> <span id="m-release-date"></span></div>
+                <div><strong>🕣Brasil:</strong> <span id="m-broadcast"></span></div>
+                <div><strong>ID:</strong> <span id="m-id"></span></div>
             </div>
+        </div>
 
-            <div class="modal-streaming">
-                <strong>Onde assistir:</strong>
-                <div id="m-streamings" class="streaming-container">
-                    </div>
-            </div>
-            </div>
+        <div class="modal-streaming">
+            <strong>📺Onde assistir:</strong>
+            <div id="m-streamings" class="streaming-container"></div>
+        </div>
     </div>
+</div>
            
     
     <script src="app.js"></script>
