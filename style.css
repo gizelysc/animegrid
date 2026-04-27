@@ -23,7 +23,11 @@ body.dark-mode {
     --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 body {
     font-family: 'Inter', system-ui, sans-serif;
@@ -48,7 +52,12 @@ body {
     z-index: 100;
 }
 
-.brand { display: flex; align-items: center; gap: 15px; }
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .badge-counter-total {
     background: var(--accent);
     color: white;
@@ -58,8 +67,15 @@ body {
     font-weight: bold;
 }
 
-.controls { display: flex; gap: 10px; align-items: center; }
-input, select, button {
+.controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+input,
+select,
+button {
     padding: 10px 14px;
     border-radius: 12px;
     border: 1px solid var(--border);
@@ -68,6 +84,7 @@ input, select, button {
     font-size: 0.85rem;
     outline: none;
 }
+
 button {
     background: var(--accent);
     color: white;
@@ -76,11 +93,25 @@ button {
     font-weight: 600;
     transition: transform 0.2s, opacity 0.2s;
 }
-button:hover { opacity: 0.9; transform: scale(1.02); }
-button.secondary { background: var(--text-sub); }
 
-.toggle-btn-others { background: var(--accent-light); color: var(--accent) !important; }
-.toggle-btn-others.active { background: var(--accent); color: white !important; }
+button:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+button.secondary {
+    background: var(--text-sub);
+}
+
+.toggle-btn-others {
+    background: var(--accent-light);
+    color: var(--accent) !important;
+}
+
+.toggle-btn-others.active {
+    background: var(--accent);
+    color: white !important;
+}
 
 /* Kanban Board */
 .kanban-board {
@@ -96,7 +127,8 @@ button.secondary { background: var(--text-sub); }
     flex: 0 0 260px;
     background: var(--column-bg);
     backdrop-filter: blur(12px);
-    border-radius: 24px; /* Mais arredondado */
+    border-radius: 24px;
+    /* Mais arredondado */
     border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -131,9 +163,19 @@ button.secondary { background: var(--text-sub); }
 }
 
 /* Scrollbar Customizada */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--text-sub); border-radius: 10px; }
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--text-sub);
+    border-radius: 10px;
+}
 
 /* A SOLUÇÃO DO ESMAGAMENTO DOS CARDS */
 .anime-card {
@@ -144,20 +186,21 @@ button.secondary { background: var(--text-sub); }
     overflow: hidden;
     transition: all 0.3s ease;
     /* flex: 0 0 auto diz para não encolher o card de jeito nenhum! */
-    flex: 0 0 auto; 
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
 }
 
-.anime-card:hover { 
-    transform: translateY(-5px); 
-    box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1); 
+.anime-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
     border-color: var(--accent);
 }
 
 .card-media {
     width: 100%;
-    height: 160px; /* Altura fixa exigida */
+    height: 160px;
+    /* Altura fixa exigida */
     background: #000;
     flex-shrink: 0;
 }
@@ -168,25 +211,91 @@ button.secondary { background: var(--text-sub); }
     object-fit: contain;
 }
 
-.anime-info { padding: 12px; }
-.anime-info h3 { font-size: 0.9rem; margin-bottom: 8px; line-height: 1.3; }
-.anime-info p { font-size: 0.75rem; color: var(--text-sub); }
+.anime-info {
+    padding: 12px;
+}
+
+.anime-info h3 {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.anime-info p {
+    font-size: 0.75rem;
+    color: var(--text-sub);
+}
 
 .card-actions {
     padding: 0 12px 12px 12px;
     display: flex;
     gap: 8px;
 }
-.card-actions button { flex: 1; padding: 6px; font-size: 0.8rem; border-radius: 8px; }
+
+.card-actions button {
+    flex: 1;
+    padding: 6px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+}
+
+/* Estilos para Anime Dropado */
+.anime-card.is-dropped {
+    opacity: 0.5;
+    filter: grayscale(0.9);
+}
+
+.anime-card.is-dropped:hover {
+    opacity: 0.8;
+    filter: grayscale(0.4);
+}
+
+.btn-drop-toggle {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    font-size: 0.75rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-drop-toggle.drop {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.btn-drop-toggle.drop:hover {
+    background: #fecaca;
+}
+
+.btn-drop-toggle.follow {
+    background: #dcfce7;
+    color: #22c55e;
+}
+
+.btn-drop-toggle.follow:hover {
+    background: #bbf7d0;
+}
+
 
 /* Modal */
 
 /* Fix da Overlay e Fundo */
 .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(5px);
-    display: none; justify-content: center; align-items: center; z-index: 1000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
 
@@ -201,10 +310,16 @@ button.secondary { background: var(--text-sub); }
     z-index: 10;
 }
 
-.modal-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
- 
+.modal-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 20px;
+}
+
 .modal-body-layout {
-    background: var(--header-bg); /* Garante fundo sólido */
+    background: var(--header-bg);
+    /* Garante fundo sólido */
     color: var(--text-main);
     padding: 30px;
     border-radius: 24px;
@@ -213,7 +328,7 @@ button.secondary { background: var(--text-sub); }
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     border: 1px solid var(--border);
 }
 
@@ -225,24 +340,46 @@ button.secondary { background: var(--text-sub); }
 }
 
 @keyframes modalShow {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .modal-content {
-    flex: 1; /* Faz o texto ocupar o espaço da esquerda */
-    min-width: 0; /* Evita que o texto quebre o layout */
+    flex: 1;
+    /* Faz o texto ocupar o espaço da esquerda */
+    min-width: 0;
+    /* Evita que o texto quebre o layout */
 }
 
 /* Coluna da Imagem */
-.modal-image-sidebar { flex: 0 0 200px; }
-.modal-image-sidebar img {
-    width: 100%; border-radius: 12px; border: 1px solid var(--border);
+.modal-image-sidebar {
+    flex: 0 0 200px;
 }
-.modal-synopsis-container { flex: 1; }
+
+.modal-image-sidebar img {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.modal-synopsis-container {
+    flex: 1;
+}
+
 #m-synopsis {
-    font-size: 0.9rem; color: var(--text-sub); line-height: 1.6;
-    margin-top: 8px; max-height: 250px; overflow-y: auto;
+    font-size: 0.9rem;
+    color: var(--text-sub);
+    line-height: 1.6;
+    margin-top: 8px;
+    max-height: 250px;
+    overflow-y: auto;
 }
 
 
@@ -251,29 +388,43 @@ button.secondary { background: var(--text-sub); }
     .modal-body-layout {
         flex-direction: column-reverse;
     }
+
     .modal-image-sidebar {
         width: 120px;
         margin: 0 auto 15px auto;
     }
 }
+
 /* Títulos */
 #m-title-english {
-    font-size: 1rem; color: var(--text-sub); font-style: italic; margin-bottom: 20px;
+    font-size: 1rem;
+    color: var(--text-sub);
+    font-style: italic;
+    margin-bottom: 20px;
 }
 
 /* Grid de Detalhes */
 .modal-details-section {
-    padding: 20px 0; border-top: 1px solid var(--border); margin-bottom: 20px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+    margin-bottom: 20px;
 }
 
 .modal-info-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
 }
 
-.modal-info-grid div { font-size: 0.85rem; }
+.modal-info-grid div {
+    font-size: 0.85rem;
+}
 
 /* Streaming */
-.modal-streaming { padding-top: 15px; border-top: 1px solid var(--border); }
+.modal-streaming {
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
 
 
 
@@ -291,8 +442,9 @@ button.secondary { background: var(--text-sub); }
     flex-wrap: wrap;
     gap: 6px;
 }
-*/
-.stream-loading, .no-stream {
+
+.stream-loading,
+.no-stream {
     font-size: 0.7rem;
     color: var(--text-sub);
     font-style: italic;
@@ -301,7 +453,8 @@ button.secondary { background: var(--text-sub); }
 .stream-link {
     font-size: 0.80rem;
     color: white !important;
-    background: var(--text-sub); // Cor genérica para streamings desconhecidos 
+    background: var(--text-sub);
+    /* Cor genérica para streamings desconhecidos */
     padding: 7px 6px;
     border-radius: 4px;
     text-decoration: none;
@@ -310,18 +463,37 @@ button.secondary { background: var(--text-sub); }
 }
 
 .stream-link:hover {
-    transform: scale(1.05); /* Aumenta levemente ao passar o mouse */
-    opacity: 0.9;           /* Fica levemente transparente */
+    transform: scale(1.05);
+    /* Aumenta levemente ao passar o mouse */
+    opacity: 0.9;
+    /* Fica levemente transparente */
 }
 
 
 /* Identificação de Cores Oficiais via URL */
-.stream-link[href*="crunchyroll"] { background: #F47521; }
-.stream-link[href*="netflix"] { background: #E50914; }
-.stream-link[href*="primevideo"] { background: #00A8E1; }
-.stream-link[href*="hidive"] { background: #00A1E5; }
-.stream-link[href*="bilibili"] { background: #00A1D6; }
-.stream-link[href*="disney"] { background: #113CCF; }
+.stream-link[href*="crunchyroll"] {
+    background: #F47521;
+}
+
+.stream-link[href*="netflix"] {
+    background: #E50914;
+}
+
+.stream-link[href*="primevideo"] {
+    background: #00A8E1;
+}
+
+.stream-link[href*="hidive"] {
+    background: #00A1E5;
+}
+
+.stream-link[href*="bilibili"] {
+    background: #00A1D6;
+}
+
+.stream-link[href*="disney"] {
+    background: #113CCF;
+}
 
 
 
@@ -330,7 +502,7 @@ button.secondary { background: var(--text-sub); }
 
 /* Ajuste na altura da imagem para equilibrar o card sem botão */
 .card-media {
-    height: 180px; 
+    height: 180px;
 }
 
 /* =========================================
@@ -338,8 +510,14 @@ button.secondary { background: var(--text-sub); }
    ========================================= */
 
 @media (max-width: 600px) {
-    .modal-main-row { flex-direction: column; align-items: center; }
-    .modal-image-sidebar { width: 150px; }
+    .modal-main-row {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .modal-image-sidebar {
+        width: 150px;
+    }
 
     .brand {
         width: 100%;
@@ -352,12 +530,12 @@ button.secondary { background: var(--text-sub); }
         justify-content: space-between;
     }
 
-    .controls input, 
-    .controls select, 
+    .controls input,
+    .controls select,
     .controls button {
         flex: 1 1 calc(50% - 10px);
     }
-    
+
     #search-input {
         width: 200px;
         transition: width 0.3s ease;
@@ -375,32 +553,38 @@ button.secondary { background: var(--text-sub); }
     }
 
     .kanban-column {
-        flex: 0 0 85vw; /* Ocupa 85% da tela, deixando a próxima coluna visível */
+        flex: 0 0 85vw;
+        /* Ocupa 85% da tela, deixando a próxima coluna visível */
         scroll-snap-align: center;
-        height: calc(100vh - 190px); /* Ajustado para o novo header empilhado */
+        height: calc(100vh - 190px);
+        /* Ajustado para o novo header empilhado */
     }
 
     .modal-body-layout {
-        flex-direction: column; /* Imagem em cima, texto embaixo */
+        flex-direction: column;
+        /* Imagem em cima, texto embaixo */
         padding: 20px;
         max-height: 90vh;
         overflow-y: auto;
         gap: 20px;
     }
-       .modal-close {
+
+    .modal-close {
         top: 10px;
         right: 15px;
     }
 }
 
-/* Container do título no modal (alinhamento) */
 .modal-header-actions {
-    display: inline-flex;;
+    display: inline-flex;
     align-items: center;
-    gap: 10px; /* Espaço maior para o botão flutuante */
+    gap: 10px;
+    /* Espaço maior para o botão flutuante */
     margin-bottom: 15px;
-    max-width: 100%; /* Garante que não ultrapasse o modal */
-    flex-wrap: wrap; /* Caso o título seja muito longo, o botão quebra para a linha de baixo junto com o texto */
+    max-width: 100%;
+    /* Garante que não ultrapasse o modal */
+    flex-wrap: wrap;
+    /* Caso o título seja muito longo, o botão quebra para a linha de baixo junto com o texto */
 }
 
 .modal-header-actions h2 {
@@ -408,64 +592,76 @@ button.secondary { background: var(--text-sub); }
     font-size: 1.4rem;
     font-weight: 800;
     line-height: 1.2;
-    display: inline; /* Comportamento de texto comum */
+    display: inline;
+    /* Comportamento de texto comum */
 }
 
 
 /* NOVO ESTILO: BOTÃO COPY "BUBBLE" */
 .copy-btn.bubble-copy {
-    background: #ffffff; /* Fundo branco puro para destacar a sombra */
-    border: none; /* Removemos a borda para usar apenas sombra */
-    color: #4f46e5; /* Indigo forte para o ícone */
-    padding: 10px; /* Mais padding para arredondar */
-    
+    background: #ffffff;
+    /* Fundo branco puro para destacar a sombra */
+    border: none;
+    /* Removemos a borda para usar apenas sombra */
+    color: #4f46e5;
+    /* Indigo forte para o ícone */
+    padding: 10px;
+    /* Mais padding para arredondar */
+
     /* CURVATURA BUBBLE: Arredondamento extra para parecer flutuante */
-    border-radius: 14px; 
-    
+    border-radius: 14px;
+
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
     /* Mantendo o efeito de papéis sobrepostos da imagem anterior */
-    box-shadow: 
-        4px 4px 0px 0px rgba(79, 70, 229, 0.1), 
+    box-shadow:
+        4px 4px 0px 0px rgba(79, 70, 229, 0.1),
         0px 2px 8px rgba(0, 0, 0, 0.08);
-        
+
     /* Impede que o botão diminua se o título for grande */
-    flex-shrink: 0; 
-    transform: translateY(-2px); /* Alinhamento visual com a altura da fonte */
+    flex-shrink: 0;
+    transform: translateY(-2px);
+    /* Alinhamento visual com a altura da fonte */
 }
 
 /* Interação ao passar o mouse: flutua mais */
 .copy-btn.bubble-copy:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 
+    box-shadow:
         8px 8px 0px 0px rgba(79, 70, 229, 0.15),
         0px 6px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Feedback Visual ao Copiar (O botão pisca em verde) */
 .copy-btn.bubble-copy.copied {
-    background: #ecfdf5; /* Fundo verde menta */
-    color: #10b981;    /* Ícone verde */
-    box-shadow: 
-        6px 6px 0px 0px rgba(16, 185, 129, 0.15), /* Sombra Verde Trás */
+    background: #ecfdf5;
+    /* Fundo verde menta */
+    color: #10b981;
+    /* Ícone verde */
+    box-shadow:
+        6px 6px 0px 0px rgba(16, 185, 129, 0.15),
+        /* Sombra Verde Trás */
         0px 4px 10px rgba(16, 185, 129, 0.1);
 }
 
 /* Ajuste sutil para o Dark Mode */
 body.dark-mode .copy-btn.bubble-copy {
-    background: #2d3748; /* Slate mais claro no escuro */
-    box-shadow: 
-        6px 6px 0px 0px rgba(129, 140, 248, 0.2), /* Sombra Indigo Clara (Dark) */
+    background: #2d3748;
+    /* Slate mais claro no escuro */
+    box-shadow:
+        6px 6px 0px 0px rgba(129, 140, 248, 0.2),
+        /* Sombra Indigo Clara (Dark) */
         0px 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .copy-btn.bubble-copy.copied {
-    background: #064e3b; /* Fundo verde escuro */
+    background: #064e3b;
+    /* Fundo verde escuro */
     color: #34d399;
-    box-shadow: 
+    box-shadow:
         6px 6px 0px 0px rgba(52, 211, 153, 0.2);
 }
