@@ -41,15 +41,18 @@ body {
 }
 
 .top-bar {
-    height: 80px;
+    min-height: 80px;
+    height: auto;
     background: var(--header-bg);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 25px;
+    padding: 15px 25px;
     border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow);
     z-index: 100;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .brand {
@@ -111,6 +114,53 @@ button.secondary {
 .toggle-btn-others.active {
     background: var(--accent);
     color: white !important;
+}
+
+/* Filtros de Nota e Streaming */
+.score-filters {
+    padding: 10px 25px;
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-sub);
+    margin-right: 5px;
+}
+
+.score-pill {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-sub);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.score-pill:hover {
+    border-color: var(--accent);
+    color: var(--text-main);
+}
+
+.score-pill.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+body.dark-mode .score-pill.active {
+    background: rgba(79, 70, 229, 0.2);
+    color: #818cf8;
+    border-color: #818cf8;
 }
 
 /* Kanban Board */
@@ -451,11 +501,11 @@ button.secondary {
 }
 
 .stream-link {
-    font-size: 0.80rem;
+    font-size: 0.65rem;
     color: white !important;
     background: var(--text-sub);
     /* Cor genérica para streamings desconhecidos */
-    padding: 7px 6px;
+    padding: 4px 4px;
     border-radius: 4px;
     text-decoration: none;
     transition: transform 0.2s ease, opacity 0.2s ease;
@@ -528,6 +578,7 @@ button.secondary {
         width: 100%;
         flex-wrap: wrap;
         justify-content: space-between;
+        gap: 10px;
     }
 
     .controls input,
@@ -537,12 +588,12 @@ button.secondary {
     }
 
     #search-input {
-        width: 200px;
-        transition: width 0.3s ease;
+        width: 100%;
+        transition: none;
     }
 
     #search-input:focus {
-        width: 250px;
+        width: 100%;
         border-color: var(--accent);
     }
 
