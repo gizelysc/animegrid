@@ -13,7 +13,7 @@
             <span id="global-counter" class="badge-counter-total">Total: 0</span>
         </div>
        <div class="controls">
-    <input type="text" id="search-input" placeholder="Buscar por nome..." oninput="filterByName()">
+    <input type="text" id="search-input" placeholder="Buscar anime ou streaming..." oninput="filterByName()">
     
     <input type="number" id="year-input" min="2000" max="2099">
     <select id="season-select">
@@ -27,6 +27,14 @@
     <button onclick="toggleTheme()" class="secondary">🌓 Tema</button>
 </div>
     </header>
+
+    <div class="sub-bar score-filters">
+        <span class="filter-label">Filtrar por Nota:</span>
+        <button class="score-pill" onclick="toggleScoreFilter('none')" data-filter="none">⚪ Sem Nota</button>
+        <button class="score-pill" onclick="toggleScoreFilter('low')" data-filter="low">🔴 Até 5.99</button>
+        <button class="score-pill" onclick="toggleScoreFilter('mid')" data-filter="mid">🟡 6.0 a 7.0</button>
+        <button class="score-pill" onclick="toggleScoreFilter('high')" data-filter="high">🟢 Acima de 7</button>
+    </div>
 
     <main id="kanban-board" class="kanban-board"></main>
    
@@ -57,6 +65,7 @@
         <div class="modal-details-section">
             <div class="modal-info-grid">
                 <div><strong>Episódios:</strong> <span id="m-episodes"></span></div>
+                <div><strong>Duração:</strong> <span id="m-duration"></span></div>
                 <div><strong>Nota:</strong> <span id="m-score"></span></div>
                 <div><strong>Gêneros:</strong> <span id="m-genres"></span></div>
                 <div><strong>Estúdio:</strong> <span id="m-studio"></span></div>
