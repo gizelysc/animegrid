@@ -341,7 +341,7 @@ function render() {
         if (searchTerm.length >= 3) {
             const titleMain = (a.title || "").toLowerCase();
             const titleEn = (a.title_english || "").toLowerCase();
-            
+
             // Busca por streamings cacheados
             let hasStream = false;
             const cachedStreams = streamingCache[a.mal_id];
@@ -356,13 +356,13 @@ function render() {
         if (activeScoreFilters.size > 0) {
             const score = a.score;
             let fitsNone = activeScoreFilters.has('none') && (!score || score === null || score === "N/A" || score === 0);
-            let fitsLow = activeScoreFilters.has('low') && (score > 0 && score <= 5.99);
-            let fitsMid = activeScoreFilters.has('mid') && (score >= 6.0 && score <= 7.0);
-            let fitsHigh = activeScoreFilters.has('high') && (score > 7.0);
-            
+            let fitsLow = activeScoreFilters.has('low') && (score > 0 && score <= 6.99);
+            let fitsMid = activeScoreFilters.has('mid') && (score >= 7.0 && score <= 7.99);
+            let fitsHigh = activeScoreFilters.has('high') && (score >= 8.0);
+
             matchesScore = fitsNone || fitsLow || fitsMid || fitsHigh;
         }
-        
+
         return isValidStatus && hasImage && matchesSearch && matchesScore;
     });
 
