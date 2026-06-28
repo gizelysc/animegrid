@@ -1,7 +1,8 @@
 const API_BASE = 'https://api.jikan.moe/v4';
 const OTHERS_PREF_KEY = 'animeGrid_showOthers';
 const DROPPED_KEY = 'animeGrid_dropped_v1';
-
+const LEGACY_MY_LIST_KEY = 'animeGrid_myList_v1';
+const MY_LIST_KEY = 'animeGrid_myList_cache_v2';
 
 const DAYS_ORDER = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Unknown'];
 const DAYS_BR = {
@@ -15,6 +16,10 @@ let prefs = JSON.parse(localStorage.getItem('animeGrid_v2')) || {};
 let droppedState = JSON.parse(localStorage.getItem(DROPPED_KEY)) || {};
 let searchTerm = ''; // Nova variável para armazenar o termo da pesquisa
 let activeScoreFilters = new Set(); // Filtros de nota ativos
+
+let myListState = JSON.parse(localStorage.getItem(MY_LIST_KEY)) || JSON.parse(localStorage.getItem(LEGACY_MY_LIST_KEY)) || {};
+let showMyListOnly = false;
+let sharedListIds = null;
 
 // Configurações de Cache
 const SEASON_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas
@@ -145,10 +150,28 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     setupControls();
 
-    // Autodetecta a temporada baseada na data de hoje
-    const { year, season } = getCurrentSeason();
+    // Verifica parâmetros compartilhados na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let year = urlParams.get('year');
+    let season = urlParams.get('season');
+    const mylistParam = urlParams.get('mylist');
+
+    if (!year || !season) {
+        // Autodetecta a temporada baseada na data de hoje
+        const current = getCurrentSeason();
+        year = current.year;
+        season = current.season;
+    }
+
     document.getElementById('year-input').value = year;
     document.getElementById('season-select').value = season;
+
+    if (mylistParam) {
+        sharedListIds = mylistParam.split(',').map(Number);
+        showMyListOnly = true;
+        document.getElementById('shared-list-banner').style.display = 'flex';
+        document.getElementById('mylist-filter-btn').classList.add('active');
+    }
 
     loadSeasonData(year, season);
 });
@@ -178,48 +201,7 @@ function fetchSpecificSeason() {
     const s = document.getElementById('season-select').value;
     if (y && s) loadSeasonData(y, s);
 }
-/*
-// Função de Busca Robusta
-async function loadSeasonData(year, season) {
-    renderMsg(`Carregando todos os animes de ${season} ${year}. Aguarde...`);
-    
-    try {
-        let allAnimes = [];
-        let page = 1;
-        let hasNextPage = true;
 
-        // Loop que garante buscar todas as páginas
-        while (hasNextPage) {
-            const url = `${API_BASE}/seasons/${year}/${season}?page=${page}&sfw=true`;
-            const resp = await fetch(url);
-            
-            if (resp.status === 429) {
-                console.warn("Limite de requisições. Pausando por 2 segundos...");
-                await new Promise(r => setTimeout(r, 2000));
-                continue; // Tenta a mesma página novamente
-            }
-
-            if (!resp.ok) throw new Error("Falha na API");
-
-            const data = await resp.json();
-            if (data.data) allAnimes = allAnimes.concat(data.data);
-            
-            hasNextPage = data.pagination.has_next_page;
-            if (hasNextPage) {
-                page++;
-                // Delay de 500ms é obrigatório para não travar a API Jikan
-                await new Promise(r => setTimeout(r, 500)); 
-            }
-        }
-
-        animeState = allAnimes;
-        render();
-    } catch (e) {
-        console.error(e);
-        renderMsg("Erro ao carregar dados. Verifique a conexão.");
-    }
-}
-*/
 
 async function fetchAnimesAndMerge(year, season, cacheKey) {
     try {
@@ -312,16 +294,36 @@ async function loadSeasonData(year, season) {
         }
     }
 
-    renderMsg(`Carregando todos os animes de ${season} ${year}. Aguarde...`);
+    renderMsg(`Carregando todos os animes da temporada:  ${season} ${year}. Aguarde...`);
     animeState = [];
     await fetchAnimesAndMerge(year, season, cacheKey);
 }
+
+function getActiveMyListIds(seasonKey) {
+    const droppedIds = new Set(droppedState[seasonKey] || []);
+    return animeState
+        .filter(anime => !droppedIds.has(anime.mal_id))
+        .map(anime => anime.mal_id);
+}
+
 // ==========================================
 // 1. FUNÇÃO RENDER atual
 // ==========================================
 function render() {
     const board = document.getElementById('kanban-board');
     if (!board) return;
+
+    // 1. Salva posições de rolagem da board e das colunas para evitar "pulos"
+    const boardScrollLeft = board.scrollLeft;
+    const columnScrolls = {};
+    board.querySelectorAll('.kanban-column').forEach(col => {
+        const header = col.querySelector('.column-header h2');
+        const container = col.querySelector('.cards-container');
+        if (header && container) {
+            columnScrolls[header.innerText] = container.scrollTop;
+        }
+    });
+
     board.innerHTML = '';
     const fragment = document.createDocumentFragment();
 
@@ -329,6 +331,7 @@ function render() {
     const s = document.getElementById('season-select').value;
     const seasonKey = `${y}_${s}`;
     const currentDropped = droppedState[seasonKey] || [];
+    const currentMyList = sharedListIds || getActiveMyListIds(seasonKey);
 
     // Limpa a fila de streamings anterior toda vez que a tela é atualizada
     streamingQueue.length = 0;
@@ -341,7 +344,7 @@ function render() {
         if (searchTerm.length >= 3) {
             const titleMain = (a.title || "").toLowerCase();
             const titleEn = (a.title_english || "").toLowerCase();
-            
+
             // Busca por streamings cacheados
             let hasStream = false;
             const cachedStreams = streamingCache[a.mal_id];
@@ -356,14 +359,19 @@ function render() {
         if (activeScoreFilters.size > 0) {
             const score = a.score;
             let fitsNone = activeScoreFilters.has('none') && (!score || score === null || score === "N/A" || score === 0);
-            let fitsLow = activeScoreFilters.has('low') && (score > 0 && score <= 5.99);
-            let fitsMid = activeScoreFilters.has('mid') && (score >= 6.0 && score <= 7.0);
-            let fitsHigh = activeScoreFilters.has('high') && (score > 7.0);
-            
+            let fitsLow = activeScoreFilters.has('low') && (score > 0 && score <= 6.99);
+            let fitsMid = activeScoreFilters.has('mid') && (score >= 7.0 && score <= 7.99);
+            let fitsHigh = activeScoreFilters.has('high') && (score >= 8.0);
+
             matchesScore = fitsNone || fitsLow || fitsMid || fitsHigh;
         }
-        
-        return isValidStatus && hasImage && matchesSearch && matchesScore;
+
+        let matchesMyList = true;
+        if (showMyListOnly) {
+            matchesMyList = currentMyList.includes(a.mal_id);
+        }
+
+        return isValidStatus && hasImage && matchesSearch && matchesScore && matchesMyList;
     });
 
     document.getElementById('global-counter').innerText = `Total: ${filtered.length} Animes`;
@@ -399,9 +407,11 @@ function render() {
             card.onclick = () => openAnimeDetails(anime.mal_id);
 
             card.innerHTML = `
-                <div class="card-media"><img src="${anime.images.jpg.image_url}" loading="lazy"></div>
+                <div class="card-media">
+                    <img src="${anime.images.jpg.image_url}" loading="lazy">
+                </div>
                 <div class="anime-info">
-                    <h3>${anime.title}</h3>
+                    <h3 title="${anime.title}">${anime.title}</h3>
                     <p>${anime.title_english || ''}</p>
                     <p>⭐ ${anime.score || 'N/A'}</p>
                     <div class="streaming-container" id="stream-${anime.mal_id}">
@@ -423,6 +433,16 @@ function render() {
     });
 
     board.appendChild(fragment);
+
+    // 2. Restaura posições de rolagem salvas
+    board.scrollLeft = boardScrollLeft;
+    board.querySelectorAll('.kanban-column').forEach(col => {
+        const header = col.querySelector('.column-header h2');
+        const container = col.querySelector('.cards-container');
+        if (header && container && columnScrolls[header.innerText] !== undefined) {
+            container.scrollTop = columnScrolls[header.innerText];
+        }
+    });
 
     // Inicia o processamento da fila assim que os cards aparecem na tela
     processStreamingQueue();
@@ -740,12 +760,24 @@ function closeModal() { document.getElementById('anime-modal').style.display = '
 function renderMsg(m) { document.getElementById('kanban-board').innerHTML = `<h3 style="padding:20px; color:var(--text-main);">${m}</h3>`; }
 
 // Correção do Botão de Tema
+function updateLogoForTheme() {
+    const logo = document.getElementById('site-logo');
+    if (!logo) return;
+
+    const isDark = document.body.classList.contains('dark-mode');
+    logo.src = isDark ? 'animegrid_escuro.jpg' : 'animegrid_claro.png';
+    logo.alt = isDark ? 'Logo AnimeGrid escuro' : 'Logo AnimeGrid claro';
+}
+
 function initTheme() {
     if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+    updateLogoForTheme();
 }
+
 function toggleTheme() {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    updateLogoForTheme();
 }
 
 function copyTitle() {
@@ -763,4 +795,89 @@ function copyTitle() {
     }).catch(err => {
         console.error('Erro ao copiar: ', err);
     });
+}
+
+/* ==========================================
+   3. FUNÇÕES ADICIONAIS PARA MINHA LISTA E COMPARTILHAMENTO
+   ========================================== */
+
+function toggleMyList(mal_id) {
+    const y = document.getElementById('year-input').value;
+    const s = document.getElementById('season-select').value;
+    const key = `${y}_${s}`;
+    if (!myListState[key]) myListState[key] = [];
+
+    const index = myListState[key].indexOf(mal_id);
+    if (index > -1) {
+        myListState[key].splice(index, 1);
+    } else {
+        myListState[key].push(mal_id);
+    }
+
+    localStorage.setItem(MY_LIST_KEY, JSON.stringify(myListState));
+    render();
+}
+
+function toggleMyListFilter() {
+    showMyListOnly = !showMyListOnly;
+    const btn = document.getElementById('mylist-filter-btn');
+    if (showMyListOnly) {
+        btn.classList.add('active');
+    } else {
+        btn.classList.remove('active');
+    }
+    render();
+}
+
+function shareMyList() {
+    const y = document.getElementById('year-input').value;
+    const s = document.getElementById('season-select').value;
+    const key = `${y}_${s}`;
+    const list = getActiveMyListIds(key);
+
+    if (list.length === 0) {
+        alert("Sua lista de assistir está vazia nesta temporada! Não há nenhum anime não dropado para compartilhar.");
+        return;
+    }
+
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?year=${y}&season=${s}&mylist=${list.join(',')}`;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        const btn = document.getElementById('share-btn');
+        const origText = btn.innerText;
+        btn.innerText = "📋 Link Copiado!";
+        btn.style.background = "#22c55e"; // verde
+        btn.style.color = "white";
+        setTimeout(() => {
+            btn.innerText = origText;
+            btn.style.background = ""; // reset
+            btn.style.color = "";
+        }, 2000);
+    }).catch(err => {
+        console.error('Erro ao copiar link: ', err);
+        alert(`Copie o link manualmente: ${shareUrl}`);
+    });
+}
+
+function importSharedList() {
+    if (!sharedListIds) return;
+    const y = document.getElementById('year-input').value;
+    const s = document.getElementById('season-select').value;
+    const key = `${y}_${s}`;
+    myListState[key] = [...sharedListIds];
+    localStorage.setItem(MY_LIST_KEY, JSON.stringify(myListState));
+    alert("Lista de assistir importada e salva no cache com sucesso!");
+    clearSharedList();
+}
+
+function clearSharedList() {
+    sharedListIds = null;
+    showMyListOnly = false;
+    document.getElementById('shared-list-banner').style.display = 'none';
+    document.getElementById('mylist-filter-btn').classList.remove('active');
+    const url = new URL(window.location);
+    url.searchParams.delete('mylist');
+    window.history.replaceState({}, '', url);
+    render();
 }
