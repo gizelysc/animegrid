@@ -14,10 +14,15 @@
 <body>
     <header class="top-bar">
         <div class="brand">
-            <img id="site-logo" class="brand-logo" src="animegrid_claro.png" alt="Logo AnimeGrid" />
+            <div class="brand-mark">
+                <img id="site-logo" class="brand-logo" src="animegrid_claro_logo.png" alt="Logo AnimeGrid" />
+                <span class="brand-name">AnimeGrid</span>
+            </div>
             <span id="global-counter" class="badge-counter-total">Total: 0</span>
         </div>
-        <div class="controls">
+        <button type="button" id="mobile-filter-toggle" class="mobile-filter-toggle" onclick="toggleMobileFilters()" aria-expanded="false" aria-controls="controls-panel">☰ Filtros</button>
+        <div class="controls" id="controls-panel">
+            <button type="button" class="mobile-control-close secondary" onclick="toggleMobileFilters(false)">✕ Fechar</button>
             <input type="text" id="search-input" placeholder="Buscar anime ou streaming..." oninput="filterByName()">
 
             <input type="number" id="year-input" min="2000" max="2099">
@@ -27,6 +32,30 @@
                 <option value="summer">Verão</option>
                 <option value="fall">Outono</option>
             </select>
+            <div class="mobile-filter-group">
+                <span class="filter-label">Dia:</span>
+                <select id="day-select" onchange="setDayFilter(this.value)">
+                    <option value="all">Todos</option>
+                    <option value="Sundays">Dom</option>
+                    <option value="Mondays">Seg</option>
+                    <option value="Tuesdays">Ter</option>
+                    <option value="Wednesdays">Qua</option>
+                    <option value="Thursdays">Qui</option>
+                    <option value="Fridays">Sex</option>
+                    <option value="Saturdays">Sáb</option>
+                    <option value="Unknown">Outros</option>
+                </select>
+            </div>
+            <div class="mobile-filter-group">
+                <span class="filter-label">Nota:</span>
+                <div class="mobile-score-pills">
+                    <button type="button" class="score-pill" onclick="toggleScoreFilter('none')" data-filter="none">⚪</button>
+                    <button type="button" class="score-pill" onclick="toggleScoreFilter('low')" data-filter="low">🔴</button>
+                    <button type="button" class="score-pill" onclick="toggleScoreFilter('mid')" data-filter="mid">🟡</button>
+                    <button type="button" class="score-pill" onclick="toggleScoreFilter('high')" data-filter="high">🟢</button>
+                </div>
+            </div>
+            <button type="button" class="score-pill mobile-mylist-pill" id="mylist-filter-btn-mobile" onclick="toggleMyListFilter()">📋 Não Dropados</button>
 
             <button onclick="fetchSpecificSeason()">Carregar temporada</button>
             <button id="share-btn" onclick="shareMyList()" class="secondary">🔗 Compartilhar Lista</button>
@@ -35,13 +64,26 @@
     </header>
 
     <div class="sub-bar score-filters">
-        <span class="filter-label">Filtrar por Nota:</span>
+        <div class="desktop-day-picker">
+            <span class="filter-label">Dia:</span>
+            <select id="day-select-desktop" onchange="setDayFilter(this.value)">
+                <option value="all">Todos</option>
+                <option value="Sundays">Dom</option>
+                <option value="Mondays">Seg</option>
+                <option value="Tuesdays">Ter</option>
+                <option value="Wednesdays">Qua</option>
+                <option value="Thursdays">Qui</option>
+                <option value="Fridays">Sex</option>
+                <option value="Saturdays">Sáb</option>
+                <option value="Unknown">Outros</option>
+            </select>
+        </div>
+        <span class="filter-label">Nota:</span>
         <button class="score-pill" onclick="toggleScoreFilter('none')" data-filter="none">⚪ Sem Nota</button>
         <button class="score-pill" onclick="toggleScoreFilter('low')" data-filter="low">🔴 Até 6</button>
         <button class="score-pill" onclick="toggleScoreFilter('mid')" data-filter="mid">🟡 7</button>
         <button class="score-pill" onclick="toggleScoreFilter('high')" data-filter="high">🟢 8+</button>
-        <span class="filter-separator" style="margin: 0 10px; color: var(--border);">|</span>
-        <button class="score-pill" id="mylist-filter-btn" onclick="toggleMyListFilter()">📋 Apenas Não Dropados</button>
+        <button class="score-pill" id="mylist-filter-btn" onclick="toggleMyListFilter()">📋 Não Dropados</button>
     </div>
 
     <div id="shared-list-banner" class="shared-list-banner" style="display: none;">
