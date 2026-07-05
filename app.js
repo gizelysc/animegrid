@@ -20,11 +20,17 @@ let activeScoreFilters = new Set(); // Filtros de nota ativos
 let myListState = JSON.parse(localStorage.getItem(MY_LIST_KEY)) || JSON.parse(localStorage.getItem(LEGACY_MY_LIST_KEY)) || {};
 let showMyListOnly = false;
 let sharedListIds = null;
+let selectedDayFilter = 'all';
 
 // Configurações de Cache
 const SEASON_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas
 const STREAM_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 dias
-let streamingCache = JSON.parse(localStorage.getItem('animeGrid_stream_cache')) || {};
+const STREAM_CACHE_KEY = 'animeGrid_stream_cache_v2';
+let streamingCache = JSON.parse(localStorage.getItem(STREAM_CACHE_KEY)) || {};
+
+if (localStorage.getItem('animeGrid_stream_cache')) {
+    localStorage.removeItem('animeGrid_stream_cache');
+}
 
 
 
@@ -116,14 +122,18 @@ function filterByName() {
 }
 
 function toggleScoreFilter(filter) {
-    const btn = document.querySelector(`button[data-filter="${filter}"]`);
-    if (activeScoreFilters.has(filter)) {
-        activeScoreFilters.delete(filter);
-        btn.classList.remove('active');
-    } else {
-        activeScoreFilters.add(filter);
-        btn.classList.add('active');
-    }
+    const buttons = document.querySelectorAll(`button[data-filter="${filter}"]`);
+    const active = activeScoreFilters.has(filter);
+
+    buttons.forEach(btn => {
+        if (active) {
+            activeScoreFilters.delete(filter);
+            btn.classList.remove('active');
+        } else {
+            activeScoreFilters.add(filter);
+            btn.classList.add('active');
+        }
+    });
     render();
 }
 
@@ -192,7 +202,41 @@ function getCurrentSeason() {
 }
 
 function setupControls() {
-    // Opção de ocultar 'Outros' foi removida a pedido
+    const daySelect = document.getElementById('day-select');
+    const daySelectDesktop = document.getElementById('day-select-desktop');
+    [daySelect, daySelectDesktop].forEach(select => {
+        if (select) {
+            select.value = selectedDayFilter;
+        }
+    });
+}
+
+function toggleMobileFilters(force) {
+    const controls = document.querySelector('.controls');
+    const toggle = document.getElementById('mobile-filter-toggle');
+    if (!controls) return;
+
+    const shouldOpen = typeof force === 'boolean' ? force : !controls.classList.contains('open');
+    controls.classList.toggle('open', shouldOpen);
+    document.body.classList.toggle('mobile-filters-open', shouldOpen);
+
+    if (toggle) {
+        toggle.setAttribute('aria-expanded', String(shouldOpen));
+        toggle.innerHTML = shouldOpen ? '✕ Filtros' : '☰ Filtros';
+    }
+}
+
+function closeMobileFilters() {
+    toggleMobileFilters(false);
+}
+
+function setDayFilter(value) {
+    selectedDayFilter = value;
+    const daySelect = document.getElementById('day-select');
+    const daySelectDesktop = document.getElementById('day-select-desktop');
+    if (daySelect) daySelect.value = value;
+    if (daySelectDesktop) daySelectDesktop.value = value;
+    render();
 }
 
 // Vinculado ao botão "Buscar" no HTML
@@ -335,6 +379,7 @@ function render() {
 
     // Limpa a fila de streamings anterior toda vez que a tela é atualizada
     streamingQueue.length = 0;
+    queuedStreamingIds.clear();
 
     const filtered = animeState.filter(a => {
         const isValidStatus = (a.status === "Currently Airing" || a.status === "Not yet aired" || a.status === "Finished Airing");
@@ -376,11 +421,15 @@ function render() {
 
     document.getElementById('global-counter').innerText = `Total: ${filtered.length} Animes`;
 
+    let renderedColumns = 0;
     DAYS_ORDER.forEach(day => {
+        if (selectedDayFilter !== 'all' && day !== selectedDayFilter) return;
 
         // Filtra animes do dia considerando horário de exibição no Brasil e a nova regra de "from"
         const allDayAnimes = filtered.filter(a => getBrasilDayEnglish(a.broadcast, a.episodes, a.aired) === day);
         if (allDayAnimes.length === 0 && day === 'Unknown') return;
+
+        renderedColumns += 1;
 
         // Separa seguindo de dropados
         const following = allDayAnimes.filter(a => !currentDropped.includes(a.mal_id));
@@ -425,12 +474,24 @@ function render() {
             `;
             container.appendChild(card);
 
-            // Coloca esse anime na fila para buscar onde assistir
-            streamingQueue.push(anime.mal_id);
+            const hasValidCache = streamingCache[anime.mal_id] &&
+                (Date.now() - streamingCache[anime.mal_id].timestamp < STREAM_CACHE_TTL) &&
+                streamingCache[anime.mal_id].data &&
+                streamingCache[anime.mal_id].data.length > 0;
+
+            if (!hasValidCache && !queuedStreamingIds.has(anime.mal_id) && streamingQueue.length < STREAMING_QUEUE_CAP) {
+                streamingQueue.push(anime.mal_id);
+                queuedStreamingIds.add(anime.mal_id);
+            }
         });
 
         fragment.appendChild(col);
     });
+
+    if (renderedColumns === 0) {
+        board.innerHTML = '<h3 style="padding:20px; color:var(--text-main);">Nenhum anime encontrado para o dia selecionado.</h3>';
+        return;
+    }
 
     board.appendChild(fragment);
 
@@ -454,210 +515,134 @@ function render() {
 // ==========================================
 const streamingQueue = [];
 let isProcessingQueue = false;
+const queuedStreamingIds = new Set();
+const processingStreamingIds = new Set();
+const STREAMING_REQUEST_DELAY = 3000;
+const STREAMING_MAX_RETRIES = 3;
+const STREAMING_RETRY_DELAY = 4000;
+const STREAMING_BATCH_SIZE = 4;
+const STREAMING_QUEUE_CAP = 20;
+let lastStreamingRequestAt = 0;
 
-/*async function processStreamingQueue() {
-    // Se já estiver processando, não faz nada
-    if (isProcessingQueue) return;
-    isProcessingQueue = true;
+function normalizeStreamingLinks(items) {
+    if (!Array.isArray(items)) return [];
 
-    while (streamingQueue.length > 0) {
-        const { id, container } = streamingQueue.shift();
-        
-        // Se o card não estiver mais na tela (ex: usuário usou a barra de busca), ignora
-        if (!document.body.contains(container)) continue;
-        
-        // 1. Verifica se já está no cache de streamings
-        const cached = streamingCache[id];
-        if (cached && (Date.now() - cached.timestamp < STREAM_CACHE_TTL)) {
-            renderStreamingLinks(container, cached.data);
-            continue; // Pula para o próximo sem gastar tempo de API
-        }
+    return items
+        .filter(item => item && typeof item === 'object' && item.url)
+        .map(item => ({
+            name: item.name || 'Link',
+            url: item.url
+        }))
+        .filter(item => /^https?:\/\//i.test(item.url))
+        .slice(0, 6);
+}
 
+async function fetchStreamingData(id) {
+    const cached = streamingCache[id];
+    const hasValidCache = cached && (Date.now() - cached.timestamp < STREAM_CACHE_TTL) && Array.isArray(cached.data);
 
+    if (hasValidCache) {
+        return cached.data;
+    }
+
+    for (let attempt = 0; attempt <= STREAMING_MAX_RETRIES; attempt++) {
         try {
-            const resp = await fetch(`${API_BASE}/anime/${id}/streaming`);
-            
+            const waitTime = lastStreamingRequestAt + STREAMING_REQUEST_DELAY - Date.now();
+            if (waitTime > 0) {
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+
+            lastStreamingRequestAt = Date.now();
+
+            const resp = await fetch(`${API_BASE}/anime/${id}/streaming`, {
+                headers: { 'Accept': 'application/json' }
+            });
+
             if (resp.status === 429) {
-                // Se tomar limite da API, devolve pra fila e espera 2 segundos
-                streamingQueue.unshift({ id, container }); 
-                await new Promise(r => setTimeout(r, 2000)); 
-                continue;
+                throw new Error('RATE_LIMIT');
             }
-            
-                const data = await resp.json();
-                 
-                // Salva no cache
-                streamingCache[id] = {
-                timestamp: Date.now(),
-                data: streams
-                };
-                localStorage.setItem('animeGrid_stream_cache', JSON.stringify(streamingCache));
 
-
-            container.innerHTML = ''; // Limpa o texto "Buscando..."
-            
-            if (data.data && data.data.length > 0) {
-                data.data.forEach(stream => {
-                    const a = document.createElement('a');
-                    a.href = stream.url;
-                    a.target = '_blank'; // Abre em nova aba
-                    a.className = 'stream-link';
-                    a.innerText = stream.name;
-                    a.onclick = (e) => e.stopPropagation(); // Evita abrir o modal ao clicar no link
-                    container.appendChild(a);
-                });
-            } else {
-                container.innerHTML = '<span class="no-stream">Sem streaming oficial</span>';
+            if (!resp.ok) {
+                if (resp.status === 404) {
+                    return [];
+                }
+                throw new Error(`HTTP_${resp.status}`);
             }
-        } catch (e) {
-            container.innerHTML = '<span class="no-stream">Erro ao carregar</span>';
-        }
 
-        // Delay MÁGICO: Espera 400ms entre cada chamada para respeitar o limite de 3/seg do Jikan
-        await new Promise(r => setTimeout(r, 400));
-    }
-    
-    isProcessingQueue = false;
-}
-
-// Função auxiliar para renderizar os links (evita repetição de código)
-function renderStreamingLinks(container, streams) {
-    if (streams && streams.length > 0) {
-        container.innerHTML = streams.map(s => 
-            `<a href="${s.url}" target="_blank" class="mini-stream-link">${s.name}</a>`
-        ).join('');
-    } else {
-        container.innerHTML = '<span class="no-stream">Não disponível</span>';
-    }
-}
-*/
-
-/*async function processStreamingQueue() {
-    if (isProcessingQueue || streamingQueue.length === 0) return;
-    isProcessingQueue = true;
-
-    while (streamingQueue.length > 0) {
-        const id = streamingQueue.shift();
-        const container = document.getElementById(`stream-${id}`);
-        if (!container) continue;
-
-        // 1. Verifica se já está no cache de streamings
-        const cached = streamingCache[id];
-        if (cached && (Date.now() - cached.timestamp < STREAM_CACHE_TTL)) {
-            renderStreamingLinks(container, cached.data);
-            continue; // Pula para o próximo sem gastar tempo de API
-        }
-
-        // 2. Se não estiver no cache, busca na API respeitando o delay
-        try {
-            const resp = await fetch(`${API_BASE}/anime/${id}/streaming`);
             const result = await resp.json();
-            const streams = result.data || [];
+            const rawItems = Array.isArray(result?.data) ? result.data : [];
+            const streams = normalizeStreamingLinks(rawItems);
 
-            // Salva no cache
             streamingCache[id] = {
                 timestamp: Date.now(),
                 data: streams
             };
-            localStorage.setItem('animeGrid_stream_cache', JSON.stringify(streamingCache));
-
-            renderStreamingLinks(container, streams);
-            
-            // Delay para evitar Erro 429 (Rate Limit)
-            await new Promise(resolve => setTimeout(resolve, 500)); 
+            localStorage.setItem(STREAM_CACHE_KEY, JSON.stringify(streamingCache));
+            return streams;
         } catch (e) {
-            console.error(`Erro ao buscar streaming para ${id}`, e);
+            if (e.message === 'RATE_LIMIT' && attempt < STREAMING_MAX_RETRIES) {
+                console.warn(`Limite da API atingido para o ID ${id}. Tentando novamente em ${STREAMING_RETRY_DELAY / 1000}s...`);
+                await new Promise(resolve => setTimeout(resolve, STREAMING_RETRY_DELAY));
+                continue;
+            }
+
+            console.error(`Erro ao buscar streamings para ${id}`, e);
+            return [];
         }
     }
 
-    isProcessingQueue = false;
-}*/
+    return [];
+}
+
 async function processStreamingQueue() {
     if (isProcessingQueue || streamingQueue.length === 0) return;
     isProcessingQueue = true;
 
-    while (streamingQueue.length > 0) {
+    let processedInBatch = 0;
+    while (streamingQueue.length > 0 && processedInBatch < STREAMING_BATCH_SIZE) {
         const id = streamingQueue.shift();
+        queuedStreamingIds.delete(id);
+
+        if (!id) continue;
+
         const container = document.getElementById(`stream-${id}`);
         if (!container) continue;
 
-        // 1. Verifica se já está no cache
         const cached = streamingCache[id];
-
-        // NOVA REGRA: Só usa o cache se for válido no tempo E se tiver encontrado algum streaming (length > 0).
-        // Se o cache existir mas estiver vazio, ele ignora o cache e tenta buscar novamente.
-        if (cached && (Date.now() - cached.timestamp < STREAM_CACHE_TTL) && cached.data && cached.data.length > 0) {
+            const hasValidCache = cached && (Date.now() - cached.timestamp < STREAM_CACHE_TTL) && Array.isArray(cached.data);
+        if (hasValidCache) {
             renderStreamingLinks(container, cached.data);
+            processedInBatch++;
             continue;
         }
 
-        // 2. Se não estiver no cache OU o cache indicava que não tinha streaming, busca na API
+        if (processingStreamingIds.has(id)) continue;
+        processingStreamingIds.add(id);
+
         try {
-            const resp = await fetch(`${API_BASE}/anime/${id}/streaming`);
-
-            // PROTEÇÃO: Se a API der erro 429 (Muitas requisições), devolve pra fila e pausa
-            if (resp.status === 429) {
-                console.warn(`Limite da API atingido para o ID ${id}. Pausando fila...`);
-                streamingQueue.unshift(id); // Devolve o anime para o início da fila
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Pausa a fila por 2 segundos
-                continue; // Tenta de novo no próximo loop
-            }
-
-            const result = await resp.json();
-            const streams = result.data || [];
-
-            // Salva no cache apenas se a resposta for válida
-            if (result.data !== undefined) {
-                streamingCache[id] = {
-                    timestamp: Date.now(),
-                    data: streams
-                };
-                localStorage.setItem('animeGrid_stream_cache', JSON.stringify(streamingCache));
-            }
-
+            const streams = await fetchStreamingData(id);
             renderStreamingLinks(container, streams);
-
-            // Delay padrão de 500ms entre as chamadas normais para evitar bloquear a API
-            await new Promise(resolve => setTimeout(resolve, 500));
-
         } catch (e) {
-            console.error(`Erro ao buscar streaming para ${id}`, e);
+            console.error(`Erro ao preencher streamings para ${id}`, e);
             container.innerHTML = '<span class="no-stream">Erro ao buscar</span>';
+        } finally {
+            processingStreamingIds.delete(id);
+        }
+
+        processedInBatch++;
+        if (streamingQueue.length > 0 && processedInBatch < STREAMING_BATCH_SIZE) {
+            await new Promise(resolve => setTimeout(resolve, STREAMING_REQUEST_DELAY));
         }
     }
 
     isProcessingQueue = false;
-}
-/*
 
-// Função auxiliar para renderizar os links usando createElement
-function renderStreamingLinks(container, streams) {
-    // 1. Limpa o texto "Aguardando fila..."
-    container.innerHTML = ''; 
-
-    // 2. Aplica a sua lógica de exibição
-    if (streams && streams.length > 0) {
-        streams.forEach(stream => {
-            const a = document.createElement('a');
-            a.href = stream.url;
-            a.target = '_blank'; // Abre em nova aba
-            
-            // Usando a classe stream-link como você solicitou
-            a.className = 'stream-link'; 
-            a.innerText = stream.name;
-            
-            // Evita abrir o modal ao clicar no link
-            a.onclick = (e) => e.stopPropagation(); 
-            
-            container.appendChild(a);
-        });
-    } else {
-        container.innerHTML = '<span class="no-stream">Não disponível</span>';
+    if (streamingQueue.length > 0) {
+        setTimeout(processStreamingQueue, 0);
     }
-}*/
+}
 
 function renderStreamingLinks(container, streams) {
-    // Limpa qualquer mensagem de "Aguardando fila..." ou "Não disponível"
     container.innerHTML = '';
 
     if (streams && streams.length > 0) {
@@ -665,9 +650,10 @@ function renderStreamingLinks(container, streams) {
             const a = document.createElement('a');
             a.href = stream.url;
             a.target = '_blank';
+            a.rel = 'noopener noreferrer';
             a.className = 'stream-link';
             a.innerText = stream.name;
-            a.onclick = (e) => e.stopPropagation(); // Evita abrir o modal ao clicar no link
+            a.onclick = (e) => e.stopPropagation();
             container.appendChild(a);
         });
     } else {
@@ -731,24 +717,8 @@ async function openAnimeDetails(id) {
     streamContainer.innerHTML = '<span class="stream-loading">Buscando opções...</span>';
 
     try {
-        const resp = await fetch(`${API_BASE}/anime/${id}/streaming`);
-        if (!resp.ok) throw new Error('Erro na API');
-
-        const data = await resp.json();
-        streamContainer.innerHTML = ''; // Limpa o texto de "Buscando..."
-
-        if (data.data && data.data.length > 0) {
-            data.data.forEach(stream => {
-                const a = document.createElement('a');
-                a.href = stream.url;
-                a.target = '_blank'; // Abre em nova guia
-                a.className = 'stream-link'; // Reaproveita o CSS colorido que já fizemos!
-                a.innerText = stream.name;
-                streamContainer.appendChild(a);
-            });
-        } else {
-            streamContainer.innerHTML = '<span class="no-stream">Nenhum streaming oficial encontrado</span>';
-        }
+        const streams = await fetchStreamingData(id);
+        renderStreamingLinks(streamContainer, streams);
     } catch (e) {
         streamContainer.innerHTML = '<span class="no-stream">Não foi possível carregar as opções</span>';
     }
@@ -765,7 +735,7 @@ function updateLogoForTheme() {
     if (!logo) return;
 
     const isDark = document.body.classList.contains('dark-mode');
-    logo.src = isDark ? 'animegrid_escuro.jpg' : 'animegrid_claro.png';
+    logo.src = isDark ? 'animegrid_escuro_logo.png' : 'animegrid_claro_logo.png';
     logo.alt = isDark ? 'Logo AnimeGrid escuro' : 'Logo AnimeGrid claro';
 }
 
@@ -820,12 +790,18 @@ function toggleMyList(mal_id) {
 
 function toggleMyListFilter() {
     showMyListOnly = !showMyListOnly;
-    const btn = document.getElementById('mylist-filter-btn');
-    if (showMyListOnly) {
-        btn.classList.add('active');
-    } else {
-        btn.classList.remove('active');
-    }
+    const btns = [
+        document.getElementById('mylist-filter-btn'),
+        document.getElementById('mylist-filter-btn-mobile')
+    ];
+    btns.forEach(btn => {
+        if (!btn) return;
+        if (showMyListOnly) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
     render();
 }
 
